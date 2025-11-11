@@ -1,0 +1,49 @@
+name: CI (Homebrew)
+
+# Run on pushes or PRs to main
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest      # <-- macOS runner with Homebrew pre‑installed
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Update Homebrew
+        run: brew update
+
+      # --------- 1️⃣ Install your tooling ----------
+      - name: Install Python 3.11 via Homebrew
+        run: brew install python@3.11
+
+      - name: Install Node 20 via Homebrew
+        run: brew install node@20
+
+      # --------- 2️⃣ Set up a Python virtualenv ----------
+      - name: Create Python venv
+        run: |
+          # Pin the brewed Python to PATH
+          echo "$(brew --prefix python@3.11)/bin" >> $GITHUB_PATH
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # --------- 3️⃣ Run your tests ----------
+      - name: Run tests
+        run: |
+          source venv/bin/activate
+          pytest
+
+      # (Optional) ----------------- 4️⃣ Cache Homebrew cellar ----------
+      - name: Cache Homebrew Cellar
+        uses: actions/cache@v3
+        with:
+          path: /opt/homebrew/Cellar
+          key: ${{ runner.os }}-brew-${{ hashFiles('**/requirements.txt') }}
